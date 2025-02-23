@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a1a"> <!-- Support mode sombre -->
+    <title>JOY beta1</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #1a1a1a;
+            color: #ff69b4;
+            margin: 0;
+            padding: 2vh;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overscroll-behavior: none; /* Évite scroll indésirable sur mobile */
+        }
+
+        .titre-joy {
+            text-align: center;
+            margin: 0 0 2vh 0;
+            padding: 1.5vh;
+            font-size: clamp(1.5em, 5vw, 2em); /* Taille adaptable */
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            background: linear-gradient(45deg, #ff69b4, #ff1493);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 1.5vh rgba(255, 105, 180, 0.4);
+            animation: pulseTitle 2s infinite alternate;
+        }
+
+        .titre-joy::after {
+            content: " 👄";
+            filter: drop-shadow(0 0 0.5vh #ff69b4);
+        }
+
+        @keyframes pulseTitle {
+            from { transform: scale(0.98); opacity: 0.9; }
+            to { transform: scale(1.02); opacity: 1; }
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            background: #2d2d2d;
+            border-radius: 1vh;
+            padding: 2vh;
+            margin-bottom: 2vh;
+            box-shadow: 0 0 1vh rgba(255,105,180,0.3);
+        }
+
+        .message {
+            margin: 1vh 0;
+            padding: 1vh 1.5vh;
+            border-radius: 2vh;
+            width: fit-content;
+            max-width: 80%; /* Plus flexible */
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .user-message {
+            background: #ff69b4;
+            color: white;
+            margin-left: auto;
+        }
+
+        .joy-message {
+            background: #4a4a4a;
+            margin-right: auto;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 1vh;
+            color: #888;
+            font-style: italic;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 1vh;
+            padding-bottom: 1vh;
+        }
+
+        input, button {
+            padding: clamp(1vh, 2vw, 1.2em); /* Taille adaptée */
+            border: none;
+            border-radius: 2.5vh;
+            font-size: clamp(0.9em, 2.5vw, 1em);
+        }
+
+        input {
+            flex: 1;
+            background: #333;
+            color: white;
+            margin-right: 1vh;
+        }
+
+        button {
+            background: #ff69b4;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+            min-width: 10vw; /* Plus facile à toucher */
+        }
+
+        button:hover {
+            background: #ff1493;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(2vh); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .titre-joy { padding: 1vh; }
+            .chat-container { padding: 1vh; }
+            .message { max-width: 90%; }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="titre-joy" role="heading" aria-label="JOY - prêt à gicler mon babe ?">JOY - prêt à gicler mon babe ?</h1>
+    
+    <div class="chat-container" id="chatBox" role="log" aria-live="polite"></div>
+    <div class="typing-indicator" id="typing">JOY écrit...</div>
+    <div class="input-container">
+        <input type="text" id="userInput" placeholder="Dis quelque chose à la pute de JOY..." autofocus aria-label="Message à JOY">
+        <button onclick="sendMessage()" aria-label="Envoyer">Envoyer</button>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const typingIndicator = document.getElementById('typing');
+
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'joy-message'}`;
+            messageDiv.textContent = message;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            userInput.value = '';
+            typingIndicator.style.display = 'block';
+
+            try {
+                const response = await fetch('/ask', { // URL relative pour portabilité
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                typingIndicator.style.display = 'none';
+
+                const messages = data.response.split('|||').map(m => m.trim());
+                for (let i = 0; i < messages.length; i++) {
+                    await new Promise(resolve => setTimeout(resolve, i === 0 ? 500 : 2000));
+                    addMessage(messages[i]);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                typingIndicator.style.display = 'none';
+                addMessage('Tu as dis quoi babe ?');
+            }
+        }
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        addMessage("Heyyy babe, prêt à gicler 👄?");
+    </script>
+</body>
+</html>
